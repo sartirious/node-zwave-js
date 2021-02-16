@@ -1286,8 +1286,11 @@ version:               ${this.version}`;
 				return "continue";
 			}
 
+			// Skip this step if the CC was already interviewed
+			if (instance.interviewComplete) return "continue";
+
 			try {
-				await instance.interview(!instance.interviewComplete);
+				await instance.interview();
 			} catch (e: unknown) {
 				if (
 					e instanceof ZWaveError &&
@@ -1591,9 +1594,8 @@ version:               ${this.version}`;
 		for (const endpoint of this.getAllEndpoints()) {
 			const instance = endpoint.createCCInstanceUnsafe(cc);
 			if (instance) {
-				// Don't do a complete interview, only dynamic values
 				try {
-					await instance.interview(false);
+					await instance.refreshValues();
 				} catch (e) {
 					this.driver.controllerLog.logNode(
 						this.id,
@@ -1621,9 +1623,8 @@ version:               ${this.version}`;
 				) {
 					continue;
 				}
-				// Don't do a complete interview, only dynamic values
 				try {
-					await cc.interview(false);
+					await cc.refreshValues();
 				} catch (e) {
 					this.driver.controllerLog.logNode(
 						this.id,
