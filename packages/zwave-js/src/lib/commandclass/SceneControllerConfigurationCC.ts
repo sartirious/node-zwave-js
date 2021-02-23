@@ -292,24 +292,16 @@ export class SceneControllerConfigurationCC extends CommandClass {
 		];
 	}
 
-	public async interview(complete: boolean = true): Promise<void> {
+	public async interview(): Promise<void> {
 		const node = this.getNode()!;
-		const endpoint = this.getEndpoint()!;
-		const api = endpoint.commandClasses[
-			"Scene Controller Configuration"
-		].withOptions({
-			priority: MessagePriority.NodeQuery,
-		});
 
 		this.driver.controllerLog.logNode(node.id, {
-			message: `${this.constructor.name}: doing a ${
-				complete ? "complete" : "partial"
-			} interview...`,
+			endpoint: this.endpointIndex,
+			message: `Interviewing ${this.ccName}...`,
 			direction: "none",
 		});
 
-		const groupCount = this.getGroupCountCached();
-		if (groupCount === 0) {
+		if (this.getGroupCountCached()) {
 			this.driver.controllerLog.logNode(node.id, {
 				endpoint: this.endpointIndex,
 				message: `skipping Scene Controller Configuration interview because Association group count is unknown`,
@@ -318,6 +310,24 @@ export class SceneControllerConfigurationCC extends CommandClass {
 			});
 			return;
 		}
+
+		// Query all association groups
+		await this.refreshValues();
+
+		// Remember that the interview is complete
+		this.interviewComplete = true;
+	}
+
+	public async refreshValues(): Promise<void> {
+		const node = this.getNode()!;
+		const endpoint = this.getEndpoint()!;
+		const api = endpoint.commandClasses[
+			"Scene Controller Configuration"
+		].withOptions({
+			priority: MessagePriority.NodeQuery,
+		});
+
+		const groupCount = this.getGroupCountCached();
 
 		// Always query scene configuration for each association group
 		for (let groupId = 1; groupId <= groupCount; groupId++) {
@@ -338,9 +348,6 @@ dimming duration: ${group.dimmingDuration.toString()}`;
 				});
 			}
 		}
-
-		// Remember that the interview is complete
-		this.interviewComplete = true;
 	}
 
 	/**
